@@ -1,477 +1,270 @@
-🍽️ Multi-threaded Restaurant Simulation with Synchronization
-A Java-based multi-threaded restaurant simulation developed for Operating System Course.
+ 
+# 🍽️ Multi-threaded Restaurant Simulation with Synchronization
 
-The project simulates the interaction between customers, chefs, waiters, and restaurant tables using Java threads, synchronization, blocking queues, locks, and concurrent data structures.
+A **Java-based multi-threaded restaurant simulation** developed for the Operating Systems course.
 
+The project simulates real-time interactions between **Customers**, **Chefs**, **Waiters**, and **Restaurant Tables** using Java threads, synchronization primitives, blocking queues, explicit locks, and concurrent data structures.
 
-📖 Introduction
+---
+
+## 📖 Introduction
+
 This project focuses on simulating the dynamic environment of a restaurant where multiple entities operate concurrently.
 
-The simulation models three main types of workers and participants:
-
-Customers who arrive at different times, wait for available tables, place orders, eat, and leave.
-Chefs who retrieve customer orders and prepare meals.
-Waiters who retrieve prepared meals and serve them to customers.
-Since these activities occur concurrently, the project uses Java's multithreading and concurrency mechanisms to coordinate access to shared resources and ensure that the restaurant operates correctly.
-
-The simulation also handles situations such as customers waiting for available tables and meals waiting to be prepared or served.
-
-🎯 Purpose of the Project
-The main purpose of this project is to demonstrate how operating-system concepts can be applied to a real-world scenario involving multiple concurrent processes/threads.
-
-The simulation specifically demonstrates:
-
-Multithreading
-Thread synchronization
-Mutual exclusion
-Inter-thread communication
-Producer-consumer behavior
-Shared resource management
-Blocking queues
-Locks
-Thread pools
-Concurrent data structures
-Thread interruption and termination
-The restaurant scenario provides a practical way to understand how multiple threads interact while accessing shared resources.
-
-🏗️ System Overview
-The restaurant simulation consists of four main components:
-
-                    ┌────────────────────┐
-                    │     Customers      │
-                    │   (Threads)        │
-                    └─────────┬──────────┘
-                              │
-                              │ Place Orders
-                              ▼
-                    ┌────────────────────┐
-                    │    Order Queue     │
-                    │ BlockingQueue      │
-                    └─────────┬──────────┘
-                              │
-                              │ Retrieve Orders
-                              ▼
-                    ┌────────────────────┐
-                    │       Chefs        │
-                    │   (Worker Threads) │
-                    └─────────┬──────────┘
-                              │
-                              │ Prepared Meals
-                              ▼
-                    ┌────────────────────┐
-                    │ Ready Meals Queue  │
-                    │ BlockingQueue      │
-                    └─────────┬──────────┘
-                              │
-                              │ Retrieve Meals
-                              ▼
-                    ┌────────────────────┐
-                    │      Waiters       │
-                    │   (Worker Threads) │
-                    └─────────┬──────────┘
-                              │
-                              │ Serve Meal
-                              ▼
-                    ┌────────────────────┐
-                    │     Customer       │
-                    │   Eats & Leaves    │
-                    └────────────────────┘
-
-🧩 Main Components
-1. Order
-The Order class represents a customer's meal order.
-
-Each order contains information such as:
-
-Customer
-Meal name
-Order time
-Table number
-Meal preparation completion time
-Serve-time future
-Customer-specific log
-The class also supports a poison pill mechanism used to signal worker threads that they should stop processing.
-
-2. Restaurant
-The Restaurant class manages the shared resources and overall state of the simulation.
-
-It is responsible for:
-
-Managing restaurant tables
-Managing customer orders
-Managing prepared meals
-Tracking table availability
-Tracking waiting time
-Tracking meal preparation time
-Tracking the number of served customers
-Updating the simulation end time
-Generating the final simulation summary
-The class uses synchronization mechanisms to safely update shared statistics.
-
-3. Customer
-Each customer runs as an independent Java thread.
+The simulation models three primary types of active participants:
 
-The customer's lifecycle is:
+* 👤 **Customers:** Arrive at scheduled times, wait for available tables, place orders, eat, and depart.
+* 👨‍🍳 **Chefs:** Retrieve pending customer orders and prepare meals.
+* 🤵 **Waiters:** Retrieve prepared meals and serve them to customers.
 
-Arrival
-   ↓
-Wait for Available Table
-   ↓
-Get Seated
-   ↓
-Place Order
-   ↓
-Wait for Meal
-   ↓
-Eat for 12 Minutes
-   ↓
-Leave Restaurant
+Because these activities happen concurrently, the project leverages **Java's multithreading and concurrency mechanisms** to coordinate access to shared resources, handle waiting queues, and guarantee system stability without deadlocks or race conditions.
 
-Customers may have to wait when all restaurant tables are occupied.
+---
 
-Each customer also maintains a log containing the events that occur during their visit.
+## 🎯 Purpose of the Project
 
-4. Chef
-Chefs are implemented as worker threads using an ExecutorService.
+The core purpose is to demonstrate how essential **Operating System (OS)** concepts apply to a real-world concurrent environment.
 
-Each chef repeatedly:
+### Key Concepts Applied
 
-Retrieves an order from the order queue.
-Determines the meal preparation time.
-Starts preparing the meal.
-Sleeps for the simulated preparation duration.
-Marks the meal as prepared.
-Places the prepared order into the ready-meals queue.
-Multiple chefs can work concurrently, allowing multiple meals to be prepared at the same time.
+* Multithreading & Thread Pools
+* Thread Synchronization & Mutual Exclusion
+* Inter-thread Communication & CompletableFuture
+* Producer-Consumer Pattern
+* Shared Resource Management
+* Blocking Queues & Concurrent Data Structures
+* Thread Interruption & Controlled Termination (Poison Pill Pattern)
 
-5. Waiter
-Waiters are also implemented as worker threads.
+---
 
-Each waiter:
+## 🏗️ System Overview
 
-Retrieves a prepared meal.
-Logs the serving event.
-Notifies the corresponding customer that the meal is ready.
-Updates the simulation state.
-Waits for one simulated minute before serving the next meal.
-The waiter uses CompletableFuture to notify the customer thread that its order has been served.
+The system architecture relies on an asynchronous pipeline pattern:
 
-🔄 Concurrency Model
-The project uses multiple types of threads.
+```text
+ ┌────────────────────┐
+ │     Customers      │ (Threads)
+ └─────────┬──────────┘
+           │ Place Orders
+           ▼
+ ┌────────────────────┐
+ │    Order Queue     │ (BlockingQueue)
+ └─────────┬──────────┘
+           │ Retrieve Orders
+           ▼
+ ┌────────────────────┐
+ │       Chefs        │ (Worker Threads)
+ └─────────┬──────────┘
+           │ Prepared Meals
+           ▼
+ ┌────────────────────┐
+ │ Ready Meals Queue  │ (BlockingQueue)
+ └─────────┬──────────┘
+           │ Retrieve Meals
+           ▼
+ ┌────────────────────┐
+ │      Waiters       │ (Worker Threads)
+ └─────────┬──────────┘
+           │ Serve Meal
+           ▼
+ ┌────────────────────┐
+ │      Customer      │ Eats & Leaves
+ └────────────────────┘
 
-Customer Threads
-A separate thread is created for every customer.
+```
 
-Thread customerThread = new Thread(customer);
-customerThread.start();
+---
 
-This allows customers to arrive and interact with the restaurant concurrently.
+## 🧩 Main Components
 
-Chef Threads
-Chef threads are managed through a fixed thread pool:
+### 1. `Order`
 
-ExecutorService chefService =
-        Executors.newFixedThreadPool(numChefs);
+Represents a customer's order inside the restaurant.
 
-Waiter Threads
-Waiters are also managed through a fixed thread pool:
+* **Attributes:** Customer reference, meal name, order time, table number, preparation completion time, serve-time future (`CompletableFuture`), and customer-specific log.
+* **Poison Pill Support:** Includes a flag to signal worker threads to shut down safely.
 
-ExecutorService waiterService =
-        Executors.newFixedThreadPool(numWaiters);
+### 2. `Restaurant`
 
-This design allows the number of chefs and waiters to be configured through the input file.
+Manages global shared resources and tracks metrics.
 
-🔐 Synchronization and Concurrency Mechanisms
-One of the main goals of this project is to demonstrate synchronization in a multi-threaded environment.
+* **Responsibilities:** Tables, order/meal queues, waiting time metrics, preparation time statistics, total served customers, and simulation end-time updates.
+* Uses synchronization to safely aggregate execution metrics.
 
-BlockingQueue
-Two BlockingQueue objects are used:
+### 3. `Customer`
 
-private final BlockingQueue<Order> orderQueue;
-private final BlockingQueue<Order> readyMealsQueue;
+Executes as an independent Java thread.
 
-They are used to coordinate communication between:
+**Lifecycle:**
 
-Customers → Chefs
-Chefs → Waiters
+1. Arrival
+2. Wait for Available Table
+3. Get Seated
+4. Place Order
+5. Wait for Meal
+6. Eat for 12 Minutes (Simulated)
+7. Leave Restaurant
 
-BlockingQueue automatically handles situations where a thread needs to wait for an item to become available.
+### 4. `Chef`
 
-ReentrantLock
-A ReentrantLock is used to protect shared simulation statistics:
+Worker thread executing inside an `ExecutorService`.
 
-private final ReentrantLock lock = new ReentrantLock();
+* Fetches an order from `orderQueue`.
+* Computes preparation duration and sleeps to simulate cooking.
+* Places the finished meal into `readyMealsQueue`.
 
-It protects variables such as:
+### 5. `Waiter`
 
-Total customers served
-Total waiting time
-Total preparation time
-Simulation end time
-For example:
+Worker thread serving completed orders.
 
-lock.lock();
+* Fetches a prepared meal from `readyMealsQueue`.
+* Triggers `CompletableFuture` to notify the waiting customer thread.
+* Waits 1 simulated minute before processing the next serving task.
 
-try {
-    totalCustomersServed++;
-} finally {
-    lock.unlock();
-}
+---
 
-This prevents multiple threads from modifying shared statistics simultaneously.
+## 🔐 Synchronization & Concurrency Mechanisms
 
-ConcurrentHashMap
-The restaurant uses a ConcurrentHashMap to maintain table availability:
+| Mechanism | Component / Usage | Purpose |
+| --- | --- | --- |
+| **`BlockingQueue`** | `orderQueue`, `readyMealsQueue` | Coordinates Producer-Consumer pattern between entities. |
+| **`ReentrantLock`** | Shared metrics (`lock.lock()`) | Protects counters like `totalCustomersServed` from race conditions. |
+| **`ConcurrentHashMap`** | `tableAvailability` | Provides thread-safe lookup/updates for table statuses. |
+| **`CompletableFuture`** | `serveTimeFuture` | Synchronizes completion signal between Waiter and Customer threads. |
+| **`synchronized`** | Loggers & File Writers | Ensures sequential, un-corrupted file and log writing. |
 
-private final ConcurrentHashMap<Integer, LocalTime> tableAvailability;
+---
 
-This allows multiple threads to access table availability safely.
+## 🍽️ Resource & Time Management
 
-CompletableFuture
-Each order contains a CompletableFuture:
+### Table Management
 
-private final CompletableFuture<LocalTime> serveTimeFuture;
+Tables are managed using a bounded `BlockingQueue<Integer>`:
 
-The customer waits for the meal:
+```java
+// Seating a customer
+int tableNumber = availableTables.take(); // Blocks if no table is available
 
-LocalTime serveTime =
-        order.getServeTimeFuture().get();
-
-When the waiter serves the meal, the waiter completes the future:
-
-order.getServeTimeFuture().complete(currentSimTime);
-
-This provides communication between the waiter thread and the corresponding customer thread.
-
-synchronized
-Customer logs and file output are protected using synchronization.
-
-For example:
-
-synchronized (order.getCustomerLog()) {
-    // Update customer log
-}
-
-The output writer is also synchronized to prevent multiple threads from writing to the file simultaneously.
-
-🍽️ Table Management
-Restaurant tables are represented using a BlockingQueue<Integer>:
-
-private final BlockingQueue<Integer> availableTables;
-
-When a customer needs a table:
-
-int tableNumber = availableTables.take();
-
-If no table is available, the customer thread blocks until another table becomes available.
-
-When the customer leaves:
-
+// Releasing table after eating
 availableTables.add(tableNumber);
 
-The table becomes available for another customer.
+```
 
-This demonstrates the management of a shared resource using concurrency mechanisms.
+### ⏱️ Simulated Time Scale
 
-⏱️ Simulation Time
-The project uses a simulated time scale to make the restaurant simulation run faster than real time.
+To avoid long real-time delays, the simulation scales down time using a constant:
 
+
+$$\text{1 Simulated Minute} = 100 \text{ Milliseconds}$$
+
+```java
 static final double TIME_SCALE = 100.0;
-
-Therefore:
-
-1 simulated minute = 100 milliseconds
-
-For example, a 12-minute eating period is simulated using:
-
+// Example: 12-minute eating period
 Thread.sleep((long) (12 * TIME_SCALE));
 
-This allows the complete restaurant simulation to run within a short amount of real time.
+```
 
-📝 Input Files
-The program processes three input files:
+---
 
-restaurant_simulation_input1.txt
-restaurant_simulation_input2.txt
-restaurant_simulation_input3.txt
+## 📝 Inputs & Outputs
 
-Each input file contains:
+### Input Files
 
-Restaurant configuration
-Meal preparation times
-Customer information
-Restaurant Configuration
-The first line defines:
+The input files contain three main types of information:
 
-NC = Number of Chefs
-NW = Number of Waiters
-NT = Number of Tables
+- Restaurant configuration (chefs, waiters, and tables)
+- Meal names and preparation times
+- Customer ID, arrival time, and ordered meal
 
 Example:
 
-NC=2 NW=2 NT=3
+```text
+NC=3 NW=4 NT=5
+Burger=00:8 Pizza=00:10 Pasta=00:10
+CustomerID=1 ArrivalTime=12:00 Order=Burger
+```
 
-Meal Preparation Times
-The second line contains meal names and their preparation times.
+### Output Files
+The output files contain the simulation events in chronological order, including:
 
-The program parses the preparation time from the input and stores it in a HashMap.
-
-Conceptually:
-
-Meal = Preparation Time
-
-Customer Information
-Each customer record contains:
-
-Customer ID
-Arrival Time
-Meal
-
-For example:
-
-C=1 T=08:05 M=Pizza
-
-The program parses the customer ID, arrival time, and requested meal before creating a customer thread.
-
-📤 Output Files
-The simulation generates three output files:
-
-restaurant_simulation_output1.txt
-restaurant_simulation_output2.txt
-restaurant_simulation_output3.txt
-
-Each output file contains the events generated during the simulation.
-
-The logs may include:
-
-Customer arrival
-Customer seating
+Customer arrival and seating
 Order placement
-Chef starting preparation
-Chef finishing preparation
-Waiter serving the meal
-Customer finishing their meal
-Table becoming available
-Simulation summary
-📊 Simulation Summary
-At the end of each simulation, the program generates a summary containing:
+Meal preparation
+Meal serving
+Customer departure
+Final simulation summary
 
-Total Customers Served
-Average Wait Time for Table
-Average Order Preparation Time
-Total Simulation Time
-
-Example structure:
-
-[End of Simulation]
-
+Example:
+```text
+[08:00] Customer 1 arrives.
+[08:01] Customer 1 places an order: Burger.
+[08:09] Chef 2 finishes preparing Burger.
+[08:09] Waiter 1 serves Burger.
+[08:21] Customer 1 leaves.
+```
 Summary:
-- Total Customers Served: ...
-- Average Wait Time for Table: ... Minutes
-- Average Order Preparation Time: ... Minutes
-- Total Simulation Time: ... Minutes
+- Total Customers Served: 5
+- Average Wait Time: 2 Minutes
+- Average Preparation Time: 8 Minutes
 
-🛑 Thread Termination
-After all customers finish, the program uses poison pills to tell chef and waiter threads to stop.
 
-A poison pill is a special Order object:
 
-new Order(true)
+---
 
-The worker thread checks:
+## 🛑 Controlled Thread Termination
 
+The system relies on the **Poison Pill Pattern** to stop consumer threads cleanly once all input orders are processed:
+
+```java
+// Poison Pill insertion
+orderQueue.put(new Order(true));
+
+// Worker Check Inside Run Loop
 if (order.isPoisonPill()) {
-    break;
+    break; // Graceful exit
 }
 
-This provides a controlled way to terminate the worker threads after all orders have been processed.
-
-The executor services are then shut down:
-
+// Thread Pool Shutdown
 chefService.shutdown();
 waiterService.shutdown();
 
+```
+
+---
+
+## 💻 Environment & Requirements
+
+### System Requirements
+
+* **Java Development Kit (JDK):** Version 8 or higher
+* **Tools:** `javac`, Java Runtime (`java`), IDE or CLI
+
+### Target Environment Specifications
+
+| Parameter | Value |
+| --- | --- |
+| **Java Version** | `1.8.0_111` (Oracle Corporation) |
+| **Operating System** | Windows 10 (amd64) |
+| **Available Processors** | 4 Cores |
+
+---
+
+## 👥 Group Members & Course Info
+
+* **Course:** Operating Systems
+* **Semester:** Fall 2024
+* **Submission Date:** 28 November 2024
 
 
-💻 Requirements
-To compile and run the project, you need:
+**Team Members:**
 
-Java Development Kit (JDK)
-Java compiler (javac)
-Java Runtime Environment
-A text editor or Java IDE
-The project was originally developed and tested using:
+* Lujain Alqarni
+* Shayma Aljuaid
+* Shatha Alshaikh
 
-Environment	Version
-Java	1.8.0_111
-Java Vendor	Oracle Corporation
-Operating System	Windows 10
-OS Version	10.0
-Architecture	amd64
-Available Processors	4 cores
+---
 
-
-🔧 Technologies Used
-Java
-Java Threads
-ExecutorService
-BlockingQueue
-CompletableFuture
-ReentrantLock
-ConcurrentHashMap
-Java I/O
-Java Time API
-Synchronization
-
-
-
-
-📌 Important Design Decisions
-Shared Queues
-The two queues separate the stages of the restaurant workflow:
-
-Order Queue
-Customers → Chefs
-
-Ready Meals Queue
-Chefs → Waiters
-
-This prevents customers, chefs, and waiters from needing to directly control each other's execution.
-
-Independent Customer Threads
-Each customer is represented by a separate thread. This makes it possible for customers with different arrival times to interact with the restaurant concurrently.
-
-Worker Thread Pools
-Chefs and waiters are managed using fixed-size thread pools. The number of workers is determined by the input configuration.
-
-Protected Shared Statistics
-Simulation statistics are shared between multiple threads, so a ReentrantLock is used to prevent race conditions while updating them.
-
-📈 Expected Behavior
-Depending on the number of tables, chefs, waiters, and customers specified in each input file:
-
-Customers may be seated immediately or wait for a table.
-Multiple chefs may prepare different meals simultaneously.
-Prepared meals wait in the ready-meals queue until a waiter serves them.
-Customers remain blocked until their meals are served.
-Tables become available after customers finish eating.
-The simulation ends after all customers have completed their visits.
-A summary is generated for each input scenario.
-
-
-
-📚 Course Information
-Course	 Operating System
-Semester	Fall 2024
-Submission Date	28 November 2024
-
-👥 Group Members
-Lujain Alqarni
-Shayma  Aljuaid	
-Shatha  Alshaikh	
-
-
-📜 Academic Project
-This repository contains an academic project developed as part of the Operating System course .
+## 📜 Academic Project
+This repository contains an academic project developed as part of the Operating System Course.
 
 The project was developed for educational purposes to demonstrate concepts related to operating systems, concurrency, synchronization, and multi-threaded programming.
